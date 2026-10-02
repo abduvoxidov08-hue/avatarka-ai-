@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="uz">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Avatarka Bot</title>
+<style>
+:root{--bg:#f5f6fa;--card:#fff;--text:#1c1e26;--muted:#6b7080;--line:#e2e4ec;--accent:#5b5bf0;--ok:#16a34a;--warn:#d97706;--err:#dc2626}
+@media (prefers-color-scheme:dark){:root{--bg:#12141a;--card:#1b1e27;--text:#eceef5;--muted:#9aa0b4;--line:#2b2f3c;--accent:#7c7cff}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+.wrap{max-width:860px;margin:0 auto;padding:20px 16px 60px}
+h1{font-size:22px;margin:8px 0 18px}
+h2{font-size:16px;margin:0 0 12px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:16px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
+.stat b{display:block;font-size:20px}.stat span{color:var(--muted);font-size:13px}
+label{display:block;font-weight:600;margin:12px 0 4px;font-size:14px}
+input[type=text],input[type=password],input[type=number],textarea{width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--text);font:inherit}
+textarea{min-height:80px;resize:vertical}
+.hint{color:var(--muted);font-size:12.5px;margin-top:3px}
+.row{display:flex;gap:12px;flex-wrap:wrap}.row>div{flex:1;min-width:140px}
+button{border:0;border-radius:8px;padding:10px 16px;font:inherit;font-weight:600;cursor:pointer;background:var(--accent);color:#fff}
+button.sec{background:transparent;color:var(--text);border:1px solid var(--line)}
+button:disabled{opacity:.5;cursor:default}
+.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+.msg{margin-top:10px;padding:9px 12px;border-radius:8px;font-size:14px;display:none}
+.msg.ok{display:block;background:rgba(22,163,74,.12);color:var(--ok)}
+.msg.err{display:block;background:rgba(220,38,38,.12);color:var(--err)}
+#logs{font:12.5px/1.5 ui-monospace,Menlo,Consolas,monospace;max-height:320px;overflow:auto;background:var(--bg);border-radius:8px;padding:10px}
+#logs div{white-space:pre-wrap;word-break:break-word}
+.l-warn{color:var(--warn)}.l-error{color:var(--err)}
+.hidden{display:none!important}
+.chk{display:flex;align-items:center;gap:8px;margin-top:12px;font-weight:600}
+.top{display:flex;justify-content:space-between;align-items:center}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top"><h1>🎨 Avatarka Bot</h1><button id="logout" class="sec hidden">Chiqish</button></div>
+
+  <section id="login" class="card hidden">
+    <h2>Kirish</h2>
+    <label for="pw">Admin paroli</label>
+    <input id="pw" type="password" autocomplete="current-password" placeholder="Netlify'da ADMIN_PASSWORD sifatida kiritgan parolingiz">
+    <div class="actions"><button id="loginBtn">Kirish</button></div>
+    <div id="loginMsg" class="msg"></div>
+  </section>
+
+  <div id="app" class="hidden">
+    <section class="card grid">
+      <div class="stat"><b id="sBot">—</b><span>Bot holati</span></div>
+      <div class="stat"><b id="sSent">0</b><span>Yuborilgan rasmlar</span></div>
+      <div class="stat"><b id="sNext">—</b><span>Keyingi avto-post (Toshkent)</span></div>
+      <div class="stat"><b id="sLast">—</b><span>Oxirgi post</span></div>
+    </section>
+
+    <section class="card">
+      <h2>Sozlamalar</h2>
+      <label for="botToken">Telegram bot tokeni (TELEGRAM_BOT_TOKEN)</label>
+      <input id="botToken" type="password" autocomplete="off" placeholder="123456789:AAxxxxxxxxxxxx">
+      <div class="hint" id="tokenHint">@BotFather → /newbot orqali olinadi. Saqlangandan keyin qayta ko'rsatilmaydi.</div>
+
+      <label for="channelId">Kanal (TELEGRAM_CHANNEL_ID)</label>
+      <input id="channelId" type="text" placeholder="@kanal_username">
+      <div class="hint">Bot kanalda ADMIN bo'lishi shart ("Xabar yuborish" huquqi bilan).</div>
+
+      <label for="queries">Qidiruv so'zlari (har qatorda bittadan)</label>
+      <textarea id="queries"></textarea>
+
+      <div class="row">
+        <div><label for="minWidth">Minimal kenglik (px)</label><input id="minWidth" type="number" min="200" max="5000"></div>
+        <div><label for="minHeight">Minimal balandlik (px)</label><input id="minHeight" type="number" min="200" max="5000"></div>
+      </div>
+
+      <label for="caption">Albom matni (birinchi rasmga)</label>
+      <textarea id="caption"></textarea>
+
+      <label for="pinterestToken">Pinterest API token (ixtiyoriy)</label>
+      <input id="pinterestToken" type="password" autocomplete="off" placeholder="Bo'sh qoldirsangiz veb-qidiruv ishlatiladi">
+      <div class="hint" id="pinHint"></div>
+
+      <label class="chk"><input id="enabled" type="checkbox"> Avto-post yoqilgan (09:00 va 21:00)</label>
+
+      <div class="actions">
+        <button id="save">Saqlash</button>
+        <button id="test" class="sec">Botni tekshirish</button>
+      </div>
+      <div id="setMsg" class="msg"></div>
+    </section>
+
+    <section class="card">
+      <h2>Boshqaruv</h2>
+      <div class="actions" style="margin-top:0">
+        <button id="postNow">📤 Hozir post yuborish</button>
+        <button id="reset" class="sec">Yuborilganlar tarixini tozalash</button>
+      </div>
+      <div id="actMsg" class="msg"></div>
+    </section>
+
+    <section class="card">
+      <h2>Loglar</h2>
+      <div id="logs"></div>
+    </section>
+  </div>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+let pw = sessionStorage.getItem("pw") || "";
+let timer = null;
+
+function show(el, text, ok) { el.textContent = text; el.className = "msg " + (ok ? "ok" : "err"); }
+
+async function api(path, method = "GET", body) {
+  const res = await fetch("/api/" + path, {
+    method,
+    headers: { "x-admin-password": pw, "Content-Type": "application/json" },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) { const e = new Error(data.error || data.message || "Xato " + res.status); e.status = res.status; throw e; }
+  return data;
+}
+
+function nextRun() {
+  const t = new Date(Date.now() + 5 * 3600e3); // Toshkent = UTC+5
+  const mins = t.getUTCHours() * 60 + t.getUTCMinutes();
+  const next = mins < 540 ? "bugun 09:00" : mins < 1260 ? "bugun 21:00" : "ertaga 09:00";
+  return next;
+}
+
+function fmtTime(iso) {
+  if (!iso) return "—";
+  return new Date(iso).toLocaleString("uz-UZ", { timeZone: "Asia/Tashkent", hour12: false, day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+}
+
+let formLoaded = false;
+function render(d) {
+  const s = d.settings;
+  $("sBot").textContent = d.running ? "⏳ Ishlayapti" : (s.hasBotToken && s.channelId ? "✅ Tayyor" : "⚠️ Sozlanmagan");
+  $("sSent").textContent = d.sentCount;
+  $("sNext").textContent = s.enabled ? nextRun() : "O'chirilgan";
+  $("sLast").textContent = d.lastPost ? `${fmtTime(d.lastPost.t)} (${d.lastPost.count} ta)` : "—";
+  if (!formLoaded) {
+    formLoaded = true;
+    $("channelId").value = s.channelId;
+    $("queries").value = s.queries.join("\n");
+    $("minWidth").value = s.minWidth;
+    $("minHeight").value = s.minHeight;
+    $("caption").value = s.caption;
+    $("enabled").checked = s.enabled;
+    if (s.hasBotToken) $("tokenHint").textContent = "Saqlangan token: " + s.botTokenMasked + " (o'zgartirish uchun yangisini kiriting, bo'sh qoldirsangiz o'zgarmaydi).";
+    $("pinHint").textContent = s.hasPinterestToken ? "Pinterest token saqlangan." : "Hozir veb-qidiruv ishlatiladi.";
+  }
+  const box = $("logs");
+  const atBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 40;
+  box.innerHTML = "";
+  for (const l of d.logs) {
+    const div = document.createElement("div");
+    div.className = "l-" + l.level;
+    div.textContent = fmtTime(l.t) + "  " + l.msg;
+    box.appendChild(div);
+  }
+  if (atBottom) box.scrollTop = box.scrollHeight;
+}
+
+async function refresh() {
+  try { render(await api("status")); }
+  catch (e) { if (e.status === 401) logout(); else if (e.status === 503) { showLogin(); show($("loginMsg"), e.message, false); } }
+}
+
+function showApp() {
+  $("login").classList.add("hidden"); $("app").classList.remove("hidden"); $("logout").classList.remove("hidden");
+  refresh(); clearInterval(timer); timer = setInterval(refresh, 5000);
+}
+function showLogin() { $("app").classList.add("hidden"); $("login").classList.remove("hidden"); $("logout").classList.add("hidden"); clearInterval(timer); }
+function logout() { pw = ""; sessionStorage.removeItem("pw"); formLoaded = false; showLogin(); }
+
+$("loginBtn").onclick = async () => {
+  pw = $("pw").value;
+  try { await api("status"); sessionStorage.setItem("pw", pw); showApp(); }
+  catch (e) { show($("loginMsg"), e.message, false); }
+};
+$("pw").addEventListener("keydown", (e) => { if (e.key === "Enter") $("loginBtn").click(); });
+$("logout").onclick = logout;
+
+$("save").onclick = async () => {
+  const body = {
+    channelId: $("channelId").value, queries: $("queries").value, caption: $("caption").value,
+    minWidth: $("minWidth").value, minHeight: $("minHeight").value, enabled: $("enabled").checked,
+  };
+  if ($("botToken").value.trim()) body.botToken = $("botToken").value;
+  if ($("pinterestToken").value.trim()) body.pinterestToken = $("pinterestToken").value;
+  try {
+    await api("settings", "POST", body);
+    $("botToken").value = ""; $("pinterestToken").value = "";
+    formLoaded = false;
+    show($("setMsg"), "Saqlandi ✅", true); refresh();
+  } catch (e) { show($("setMsg"), e.message, false); }
+};
+
+$("test").onclick = async () => {
+  $("test").disabled = true;
+  try { const r = await api("test", "POST"); show($("setMsg"), r.message, r.ok); }
+  catch (e) { show($("setMsg"), e.message, false); }
+  $("test").disabled = false;
+};
+
+$("postNow").onclick = async () => {
+  $("postNow").disabled = true;
+  try { const r = await api("post-now", "POST"); show($("actMsg"), r.message, true); setTimeout(refresh, 2000); }
+  catch (e) { show($("actMsg"), e.message, false); }
+  setTimeout(() => ($("postNow").disabled = false), 5000);
+};
+
+$("reset").onclick = async () => {
+  if (!confirm("Yuborilgan rasmlar tarixi o'chiriladi va rasmlar qayta ishlatilishi mumkin. Davom etasizmi?")) return;
+  try { await api("reset-sent", "POST"); show($("actMsg"), "Tarix tozalandi", true); refresh(); }
+  catch (e) { show($("actMsg"), e.message, false); }
+};
+
+(async () => {
+  if (pw) { try { await api("status"); return showApp(); } catch (e) { /* login ko'rsatiladi */ } }
+  showLogin();
+  try { const p = await (await fetch("/api/ping")).json(); if (!p.adminConfigured) show($("loginMsg"), "ADMIN_PASSWORD Netlify'da hali o'rnatilmagan.", false); } catch (e) {}
+})();
+</script>
+</body>
+</html>

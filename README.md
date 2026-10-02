@@ -1,91 +1,38 @@
-# Pinterest → Telegram avto-post boti
+# Avatarka Bot — Pinterest → Telegram (Netlify)
 
-Pinterest'dan sifatli oboy/profil rasmlarini topib, Telegram kanalga **har kuni 09:00 va 21:00 (Asia/Tashkent)** da
-10 ta rasmdan iborat **bitta albom** qilib yuboradi. Avval yuborilgan rasmlar SQLite bazasi orqali takrorlanmaydi
-(pin ID va rasm hash'i bo'yicha).
+Netlify'da 24/7 ishlaydigan sayt + avto-post. Har kuni **09:00 va 21:00 (Toshkent)** da kanalga 10 ta rasmdan iborat
+bitta albom yuboradi. Sozlamalar (bot tokeni, kanal) saytning o'zidan kiritiladi.
 
-## Fayllar
+> Python variant (kompyuter/VPS uchun) `python-bot/` papkasida.
 
-| Fayl | Vazifasi |
-|---|---|
-| `config.py` | `.env` ni o'qish va sozlamalar |
-| `database.py` | Yuborilgan rasmlar bazasi (SQLite) |
-| `pinterest_service.py` | Qidirish (API v5 + scraper), HD filtri, yuklab olish |
-| `telegram_service.py` | Albom yuborish, FloodWait/tarmoq xatolarida qayta urinish |
-| `scheduler.py` | APScheduler: 09:00 va 21:00 |
-| `main.py` | Ishga tushirish, loglash, to'xtatish |
+## Netlify'ga joylash
 
-## O'rnatish
+1. Netlify → **Add new site → Import from Git** → shu repozitoriyni tanlang (sozlamalar `netlify.toml` da, hech narsa o'zgartirmang).
+2. **Site configuration → Environment variables** da bitta o'zgaruvchi qo'shing:
+   - `ADMIN_PASSWORD` = o'zingiz o'ylab topgan kuchli parol (panelga kirish uchun).
+3. **Deploys → Trigger deploy** (o'zgaruvchi qo'shilgach qayta deploy qiling).
+4. Saytni oching → parolni kiriting → **Sozlamalar**:
+   - Bot tokeni (@BotFather), kanal (`@kanal_username`) → **Saqlash** → **Botni tekshirish**.
+   - Botni kanalga **admin** qiling.
+5. **Hozir post yuborish** tugmasi bilan sinab ko'ring. Loglar sahifada ko'rinadi.
 
-1. **Bot yaratish:** Telegram'da [@BotFather](https://t.me/BotFather) → `/newbot` → token oling.
-2. **Botni kanalga admin qiling** ("Post messages" huquqi bilan).
-3. Python 3.10+ kerak:
+Avto-post Netlify Scheduled Function orqali ishlaydi (faqat **production deploy** da). Sayt ochiq turishi shart emas.
 
-```bash
-python3 -m venv .venv
-source .venv/bin/activate          # Windows: .venv\Scripts\activate
-pip install -r requirements.txt
-cp .env.example .env               # Windows: copy .env.example .env
-```
+## Pinterest qanday ishlaydi
 
-4. `.env` ni to'ldiring: kamida `TELEGRAM_BOT_TOKEN` va `TELEGRAM_CHANNEL_ID` (`@kanal_nomi` yoki `-100...`).
+- Standart: Pinterest veb-saytining qidiruv endpoint'i (scraper). Token kerak emas.
+- Ixtiyoriy: Pinterest API v5 tokeni kiritilsa avval u ishlatiladi (qidiruv endpoint'i hamma akkauntga ochiq emas), xato bersa veb-qidiruvga o'tadi.
+- Pinterest Netlify (AWS) IP'larini bloklashi mumkin. Shunda loglarda "Yetarli rasm topilmadi" chiqadi va keyingi rejada qayta uriniladi. Bu holatda Python variantni VPS'da/uyda ishlating.
+- Kod Pinterest/Telegram'ga jonli ulanmasdan, soxta javoblar bilan sinalgan (`npm test`). Birinchi marta "Hozir post yuborish" bilan tekshiring.
 
-## Ishga tushirish
+## Xavfsizlik
 
-```bash
-python main.py --now   # sinov: darhol bitta post yuboradi va chiqadi
-python main.py         # doimiy rejim: 09:00 va 21:00 da post qiladi
-```
+- Bot tokeni Netlify Blobs'da saqlanadi, brauzerga hech qachon qaytarilmaydi (faqat maska ko'rsatiladi).
+- Barcha API so'rovlari `ADMIN_PASSWORD` bilan himoyalangan. Parolni hech kimga bermang.
+- Token chatga/GitHub'ga tushib qolgan bo'lsa, @BotFather → `/revoke` bilan yangilang.
 
-Loglar konsolga va `bot.log` fayliga (aylanuvchi, 5 MB × 3) yoziladi.
+## Eslatmalar
 
-### Serverda doimiy ishlatish (systemd)
-
-`/etc/systemd/system/pinterest-bot.service`:
-
-```ini
-[Unit]
-Description=Pinterest Telegram bot
-After=network-online.target
-
-[Service]
-WorkingDirectory=/opt/pinterest-bot
-ExecStart=/opt/pinterest-bot/.venv/bin/python main.py
-Restart=always
-RestartSec=10
-
-[Install]
-WantedBy=multi-user.target
-```
-
-```bash
-sudo systemctl daemon-reload && sudo systemctl enable --now pinterest-bot
-journalctl -u pinterest-bot -f
-```
-
-## Pinterest haqida muhim eslatmalar
-
-- **Pinterest API v5** da ixtiyoriy kalit so'z bo'yicha ommaviy pin qidirish (`search/partner/pins`) faqat
-  tasdiqlangan akkauntlarga ochiq. Shu sabab `PINTEREST_ACCESS_TOKEN` ixtiyoriy: bo'lmasa yoki xato bersa,
-  bot avtomatik ravishda Pinterest veb-saytining qidiruv endpoint'iga (scraper) o'tadi.
-- Scraper rasmiy API emas: Pinterest uni o'zgartirishi yoki cheklashi (429/403) mumkin va ularning foydalanish
-  shartlariga to'g'ri kelmasligi mumkin. Bunday holatda bot xatoni logga yozadi va to'xtamaydi, keyingi rejada qayta urinadi.
-  Datacenter IP'lar ko'pincha bloklanadi — kerak bo'lsa `PROXY_URL` orqali proxy ishlating.
-- Pinterest rasmlari mualliflik huquqi bilan himoyalangan bo'lishi mumkin; kanalda foydalanish mas'uliyati sizda.
-- Eslatma: ushbu kod Pinterest'ga jonli ulanib sinab ko'rilmagan (ishlab chiqish muhitida Pinterest yopiq edi);
-  baza, rejalashtiruvchi, rasm tayyorlash va yig'ish mantiqi soxta ma'lumotlar bilan tekshirilgan. Birinchi marta
-  `python main.py --now` bilan sinab ko'ring.
-
-## Xatoliklar bilan ishlash
-
-- **FloodWait (`RetryAfter`)**: Telegram aytgan vaqt kutiladi, so'ng qayta yuboriladi (15 daqiqagacha).
-- **Tarmoq/timeout**: exponential backoff bilan 6 martagacha qayta urinish.
-- **Pinterest bermasa/uzilsa**: so'rovlar 4 martagacha qayta uriniladi; rasm yetmasa 3 raund yig'iladi, kamida 2 ta
-  bo'lsa albom shu miqdorda yuboriladi, aks holda keyingi rejaga qoldiriladi. Jarayon hech qachon to'xtamaydi.
-- Rasm bazaga **faqat albom muvaffaqiyatli yuborilgach** yoziladi.
-- Bot o'chiq turgan bo'lsa, 1 soatgacha o'tkazib yuborilgan post qaytib ishga tushganda bajariladi.
-
-## Sozlamalar (`.env`)
-
-`.env.example` faylida barcha o'zgaruvchilar izohlangan: qidiruv so'zlari (`PINTEREST_QUERIES`), minimal o'lcham,
-vaqtlar (`POST_TIMES`), rasm soni (`IMAGES_PER_POST`, 2–10) va h.k.
+- Takrorlanmaslik: Pinterest pin ID'lari Blobs'da saqlanadi; albom muvaffaqiyatli yuborilgandan keyingina yoziladi.
+- Rasm Telegram'ga URL orqali beriladi: 4.5 MB dan katta originallar o'rniga ~736px variant ishlatiladi.
+- Vaqtlar `netlify/functions/scheduled-post.mjs` dagi cron (`0 4,16 * * *`, UTC) bilan belgilanadi.
