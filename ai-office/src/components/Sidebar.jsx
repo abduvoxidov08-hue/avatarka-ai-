@@ -9,12 +9,13 @@ const STATUS = {
 export default function Sidebar({ agents, state, messages, meta, connected, send, focusId, setFocusId }) {
   const [text, setText] = useState('')
   const [error, setError] = useState('')
-  const endRef = useRef(null)
+  const listRef = useRef(null)
   const nameOf = (id) => (id === 'user' ? 'Siz' : id === 'all' ? 'Hamma' : agents.find((a) => a.id === id)?.name ?? id)
   const colorOf = (id) => agents.find((a) => a.id === id)?.color ?? '#94a3b8'
 
   useEffect(() => {
-    endRef.current?.scrollIntoView({ behavior: 'smooth' })
+    const el = listRef.current
+    if (el) el.scrollTop = el.scrollHeight
   }, [messages])
 
   async function submit(e) {
@@ -66,7 +67,7 @@ export default function Sidebar({ agents, state, messages, meta, connected, send
         </ul>
       </section>
 
-      <section className="flex-1 space-y-3 overflow-y-auto p-3">
+      <section ref={listRef} className="flex-1 space-y-3 overflow-y-auto p-3">
         {messages.length === 0 && (
           <p className="text-sm text-slate-500">Jarvis'ga topshiriq yozing, masalan: «Yomg'irli kecha uchun lo-fi Shorts».</p>
         )}
@@ -78,7 +79,6 @@ export default function Sidebar({ agents, state, messages, meta, connected, send
             <div className="whitespace-pre-wrap rounded-lg bg-slate-800 px-3 py-2 text-sm">{m.text}</div>
           </div>
         ))}
-        <div ref={endRef} />
       </section>
 
       <form onSubmit={submit} className="border-t border-slate-800 p-3">
