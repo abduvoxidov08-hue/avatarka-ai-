@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import Office3D from './components/Office3D.jsx'
+import ErrorBoundary from './components/ErrorBoundary.jsx'
 import Sidebar from './components/Sidebar.jsx'
 import { useOffice } from './lib/useOffice.js'
 
@@ -10,7 +11,9 @@ export default function App() {
   return (
     <div className="flex h-full bg-slate-950">
       <main className="relative flex-1">
-        <Office3D {...office} focusId={focusId} setFocusId={setFocusId} />
+        <ErrorBoundary>
+          <Office3D {...office} focusId={focusId} setFocusId={setFocusId} />
+        </ErrorBoundary>
         {focusId && (
           <button
             onClick={() => setFocusId(null)}
