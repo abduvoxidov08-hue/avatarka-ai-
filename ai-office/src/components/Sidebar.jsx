@@ -13,7 +13,9 @@ export default function Sidebar({ agents, state, messages, meta, connected, send
   const nameOf = (id) => (id === 'user' ? 'Siz' : id === 'all' ? 'Hamma' : agents.find((a) => a.id === id)?.name ?? id)
   const colorOf = (id) => agents.find((a) => a.id === id)?.color ?? '#94a3b8'
 
-  useEffect(() => endRef.current?.scrollIntoView({ behavior: 'smooth' }), [messages])
+  useEffect(() => {
+    endRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [messages])
 
   async function submit(e) {
     e.preventDefault()
