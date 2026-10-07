@@ -8,3 +8,7 @@ __pycache__/
 venv/
 node_modules/
 .netlify/
+
+studio/data/
+*.db-shm
+*.db-wal
