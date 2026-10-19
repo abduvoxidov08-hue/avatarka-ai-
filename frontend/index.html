@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="uz" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>@avatarlar_uz • AI Boshqaruv Paneli</title>
+  <!-- Telegram WebApp SDK -->
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="style.css">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            telegram: '#24A1DE',
+            darkBg: '#0f172a',
+            cardBg: '#1e293b',
+            accent: '#38bdf8'
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen pb-20 select-none">
+
+  <!-- Top App Bar -->
+  <header class="sticky top-0 z-40 backdrop-blur-md bg-slate-900/80 border-b border-slate-800 px-4 py-3 flex items-center justify-between">
+    <div class="flex items-center space-x-2">
+      <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-sky-500 to-indigo-500 flex items-center justify-center font-bold text-white shadow-lg shadow-sky-500/20">
+        ✨
+      </div>
+      <div>
+        <h1 class="text-sm font-bold text-white tracking-wide">@avatarlar_uz</h1>
+        <p class="text-[11px] text-sky-400 font-medium">AI Post Boshqaruvchi</p>
+      </div>
+    </div>
+    <div class="flex items-center space-x-2">
+      <button id="settingsBtn" class="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition-all active:scale-95" title="Server sozlamasi">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+      </button>
+      <button id="refreshBtn" class="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition-all active:scale-95" title="Yangilash">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+      </button>
+      <span id="badgeCount" class="text-xs px-2.5 py-1 rounded-full bg-sky-500/20 text-sky-400 font-semibold border border-sky-500/30">
+        0 ta kutilmoqda
+      </span>
+    </div>
+  </header>
+
+  <!-- Category Pills Bar -->
+  <div class="px-4 pt-3 pb-1 overflow-x-auto no-scrollbar flex space-x-2">
+    <button class="cat-pill active px-3.5 py-1.5 rounded-full text-xs font-medium whitespace-nowrap bg-sky-500 text-white shadow-md shadow-sky-500/25 transition-all" data-cat="all">
+      Barchasi
+    </button>
+    <button class="cat-pill px-3.5 py-1.5 rounded-full text-xs font-medium whitespace-nowrap bg-slate-800 text-slate-300 border border-slate-700 hover:border-slate-600 transition-all" data-cat="cars">
+      🏎 Avtomobillar
+    </button>
+    <button class="cat-pill px-3.5 py-1.5 rounded-full text-xs font-medium whitespace-nowrap bg-slate-800 text-slate-300 border border-slate-700 hover:border-slate-600 transition-all" data-cat="avatars_boys">
+      👤 Yigitlar
+    </button>
+    <button class="cat-pill px-3.5 py-1.5 rounded-full text-xs font-medium whitespace-nowrap bg-slate-800 text-slate-300 border border-slate-700 hover:border-slate-600 transition-all" data-cat="avatars_girls">
+      🌸 Qizlar
+    </button>
+    <button class="cat-pill px-3.5 py-1.5 rounded-full text-xs font-medium whitespace-nowrap bg-slate-800 text-slate-300 border border-slate-700 hover:border-slate-600 transition-all" data-cat="couples">
+      👩‍❤️‍👨 Juftliklar
+    </button>
+    <button class="cat-pill px-3.5 py-1.5 rounded-full text-xs font-medium whitespace-nowrap bg-slate-800 text-slate-300 border border-slate-700 hover:border-slate-600 transition-all" data-cat="nature">
+      🌲 Tabiat
+    </button>
+    <button class="cat-pill px-3.5 py-1.5 rounded-full text-xs font-medium whitespace-nowrap bg-slate-800 text-slate-300 border border-slate-700 hover:border-slate-600 transition-all" data-cat="movies_anime">
+      🎬 Kino & Anime
+    </button>
+    <button class="cat-pill px-3.5 py-1.5 rounded-full text-xs font-medium whitespace-nowrap bg-slate-800 text-slate-300 border border-slate-700 hover:border-slate-600 transition-all" data-cat="videos">
+      🎥 Videolar
+    </button>
+  </div>
+
+  <!-- Search & Instant Generator Bar -->
+  <div class="px-4 py-2">
+    <div class="relative flex items-center">
+      <input type="text" id="searchInput" placeholder="Yangi mavzu qidiring (masalan: Porsche 911, Anime girl)..." 
+        class="w-full bg-slate-900/90 border border-slate-800 rounded-2xl pl-10 pr-24 py-2.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition-all shadow-inner">
+      <div class="absolute left-3 text-slate-500">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+      </div>
+      <button id="searchBtn" class="absolute right-1.5 px-3 py-1.5 bg-gradient-to-r from-sky-500 to-indigo-600 text-white rounded-xl text-xs font-semibold shadow hover:opacity-95 transition-all active:scale-95 flex items-center space-x-1">
+        <span>AI Qidirish</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Main Candidates Container -->
+  <main class="px-4 py-2">
+    <!-- Loading skeleton -->
+    <div id="loadingIndicator" class="hidden py-12 text-center">
+      <div class="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-sky-400"></div>
+      <p class="mt-3 text-xs text-slate-400 font-medium">To'plamlar yuklanmoqda...</p>
+    </div>
+
+    <!-- Candidate Cards List -->
+    <div id="candidatesList" class="space-y-5">
+      <!-- Cards will be dynamically injected here -->
+    </div>
+
+    <!-- Empty State -->
+    <div id="emptyState" class="hidden py-16 text-center px-4">
+      <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-center text-3xl shadow-xl">
+        🎉
+      </div>
+      <h3 class="text-base font-bold text-white">Hozircha barcha to'plamlar ko'rib chiqildi!</h3>
+      <p class="text-xs text-slate-400 mt-1 max-w-xs mx-auto">
+        Kutilayotgan yangi to'plamlar yo'q. Yangi albom qidirish uchun yuqoridagi qidiruvdan foydalaning yoki tugmani bosing.
+      </p>
+      <button id="triggerAutoBtn" class="mt-4 px-5 py-2.5 bg-sky-500 hover:bg-sky-400 text-white font-semibold rounded-2xl text-xs shadow-lg shadow-sky-500/25 transition-all active:scale-95">
+        ⚡️ Yangi to'plamlar yig'ish (AI)
+      </button>
+    </div>
+  </main>
+
+  <!-- Edit Caption Modal -->
+  <div id="captionModal" class="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-t-3xl sm:rounded-3xl w-full max-w-lg p-5 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <h3 class="font-bold text-sm text-white">✏️ Post matnini tahrirlash</h3>
+        <button id="closeModalBtn" class="text-slate-400 hover:text-white p-1">✕</button>
+      </div>
+      <textarea id="modalCaptionText" rows="6" class="w-full bg-slate-950 border border-slate-800 rounded-2xl p-3 text-xs text-slate-200 focus:outline-none focus:border-sky-500"></textarea>
+      <div class="flex space-x-2 pt-2">
+        <button id="saveCaptionBtn" class="flex-1 py-2.5 bg-sky-500 hover:bg-sky-400 text-white font-semibold rounded-xl text-xs shadow-lg shadow-sky-500/20 active:scale-95">
+          Saqlash
+        </button>
+        <button id="cancelModalBtn" class="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold rounded-xl text-xs active:scale-95">
+          Bekor qilish
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings Modal (Backend URL) -->
+  <div id="settingsModal" class="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-t-3xl sm:rounded-3xl w-full max-w-lg p-5 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <h3 class="font-bold text-sm text-white">⚙️ Server va API Sozlamasi</h3>
+        <button id="closeSettingsModalBtn" class="text-slate-400 hover:text-white p-1">✕</button>
+      </div>
+      <div class="space-y-2">
+        <label class="text-xs text-slate-300 font-medium">Backend API server manzili:</label>
+        <input type="text" id="settingsBackendUrlInput" placeholder="http://localhost:8000 yoki https://your-server.onrender.com"
+          class="w-full bg-slate-950 border border-slate-800 rounded-2xl p-3 text-xs text-slate-200 focus:outline-none focus:border-sky-500">
+        <p class="text-[11px] text-slate-400 leading-relaxed">
+          Agar bot o'z kompyuteringizda ishlayotgan bo'lsa, <code>http://localhost:8000</code> qoldiring. Agar serverga joylagan bo'lsangiz, server manzilini kiriting.
+        </p>
+      </div>
+      <div class="flex space-x-2 pt-2">
+        <button id="saveSettingsBtn" class="flex-1 py-2.5 bg-sky-500 hover:bg-sky-400 text-white font-semibold rounded-xl text-xs shadow-lg shadow-sky-500/20 active:scale-95">
+          Saqlash va Ulanish
+        </button>
+        <button id="cancelSettingsModalBtn" class="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold rounded-xl text-xs active:scale-95">
+          Bekor qilish
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-2xl bg-slate-800/95 border border-slate-700 text-white text-xs font-medium shadow-2xl backdrop-blur-md opacity-0 pointer-events-none transition-all duration-300 flex items-center space-x-2">
+    <span id="toastIcon">✅</span>
+    <span id="toastText">Xabar</span>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

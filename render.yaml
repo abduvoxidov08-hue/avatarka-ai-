@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: avatarlar-uz-backend
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: python run.py
+    plan: free
+    autoDeploy: true
+    envVars:
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: CHANNEL_ID
+        value: "@avatarlar_uz"
+      - key: ADMIN_TELEGRAM_ID
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: MINI_APP_URL
+        value: "https://avatarlar-uz.netlify.app"
+      - key: PORT
+        value: "8000"
