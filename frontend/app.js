@@ -15,9 +15,6 @@ if (!API_BASE_URL) {
   }
 }
 
-// State for active photo in carousels: { [albumId]: activeIndex }
-const albumActivePhoto = {};
-
 // Elements
 const candidatesList = document.getElementById("candidatesList");
 const emptyState = document.getElementById("emptyState");
@@ -64,7 +61,7 @@ function showToast(text, isError = false) {
 
 // Category Pills Handler
 document.querySelectorAll(".cat-pill").forEach(pill => {
-  pill.addEventListener("click", () => {
+  pill.addEventListener("click", async () => {
     haptic("light");
     document.querySelectorAll(".cat-pill").forEach(p => {
       p.className = "cat-pill px-3.5 py-1.5 rounded-full text-xs font-medium whitespace-nowrap bg-slate-800 text-slate-300 border border-slate-700 hover:border-slate-600 transition-all";
@@ -72,18 +69,18 @@ document.querySelectorAll(".cat-pill").forEach(pill => {
     pill.className = "cat-pill active px-3.5 py-1.5 rounded-full text-xs font-medium whitespace-nowrap bg-sky-500 text-white shadow-md shadow-sky-500/25 transition-all";
     
     currentCategory = pill.dataset.cat;
-    loadCandidates();
+    await loadCandidatesAndGenerateIfNeeded(currentCategory);
   });
 });
 
 // Load Candidates from Backend
-async function loadCandidates() {
+async function loadCandidates(cat = currentCategory) {
   loadingIndicator.classList.remove("hidden");
   candidatesList.innerHTML = "";
   emptyState.classList.add("hidden");
 
   try {
-    const res = await fetch(`${API_BASE_URL}/api/candidates?status=pending&category=${currentCategory}`);
+    const res = await fetch(`${API_BASE_URL}/api/candidates?status=pending&category=${cat}`);
     if (!res.ok) throw new Error("Yuklab bo'lmadi");
     const data = await res.json();
     const candidates = data.candidates || [];
@@ -92,103 +89,65 @@ async function loadCandidates() {
 
     if (candidates.length === 0) {
       emptyState.classList.remove("hidden");
+      return 0;
     } else {
       candidates.forEach(album => renderAlbumCard(album));
+      return candidates.length;
     }
   } catch (err) {
     console.error(err);
     showToast("Server bilan bog'lanishda xatolik", true);
     emptyState.classList.remove("hidden");
+    return 0;
   } finally {
     loadingIndicator.classList.add("hidden");
   }
 }
 
-// Switch active photo in the 10-photo album carousel
-function switchAlbumPhoto(albumId, newIdx, total) {
-  if (newIdx < 0) newIdx = total - 1;
-  if (newIdx >= total) newIdx = 0;
-  
-  albumActivePhoto[albumId] = newIdx;
-  
-  const mainImg = document.getElementById(`main-img-${albumId}`);
-  const counter = document.getElementById(`counter-${albumId}`);
-  const albumCard = document.getElementById(`album-${albumId}`);
-  
-  if (mainImg) {
-    const thumb = albumCard.querySelector(`.thumb-btn[data-idx="${newIdx}"]`);
-    if (thumb) {
-      mainImg.src = thumb.dataset.url;
+// If user selects a category and it has no candidates, instantly auto-generate 10 photos for that category!
+async function loadCandidatesAndGenerateIfNeeded(cat) {
+  const count = await loadCandidates(cat);
+  if (count === 0 && cat !== "all") {
+    showToast("To'plam tayyorlanmoqda...", false);
+    try {
+      await fetch(`${API_BASE_URL}/api/search`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ category: cat, query: "", media_type: cat === "videos" ? "video" : "photo" })
+      });
+      await loadCandidates(cat);
+    } catch (e) {
+      console.error(e);
     }
   }
-  
-  if (counter) {
-    counter.textContent = `📷 ${newIdx + 1} / ${total} ta rasm`;
-  }
-  
-  // Update active border on thumbnails
-  albumCard.querySelectorAll(`.thumb-btn`).forEach(tb => {
-    if (parseInt(tb.dataset.idx) === newIdx) {
-      tb.classList.add("thumb-active");
-      tb.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-    } else {
-      tb.classList.remove("thumb-active");
-    }
-  });
 }
 
-// Render Album Card with 10-photo Carousel & Thumbnail Strip
+// Render Album Card with Compact 10-Photo 5x2 Grid Gallery
 function renderAlbumCard(album) {
   const card = document.createElement("div");
   card.id = `album-${album.id}`;
   card.className = "bg-slate-900 border border-slate-800/80 rounded-3xl p-4 shadow-xl space-y-3 transition-all";
 
   const count = album.media_urls.length;
-  albumActivePhoto[album.id] = 0;
-
   let mediaHtml = "";
 
   if (album.media_type === "video") {
     mediaHtml = `
-      <div class="relative rounded-2xl overflow-hidden bg-black max-h-[380px] flex items-center justify-center border border-slate-800">
-        <video src="${album.media_urls[0]}" controls class="w-full max-h-[380px] object-contain rounded-2xl" preload="metadata"></video>
+      <div class="relative rounded-2xl overflow-hidden bg-black max-h-[300px] flex items-center justify-center border border-slate-800">
+        <video src="${album.media_urls[0]}" controls class="w-full max-h-[300px] object-contain rounded-2xl" preload="metadata"></video>
       </div>
     `;
   } else {
-    // 10-Photo Carousel + Thumbnail Strip
-    let thumbnailsHtml = `<div class="flex space-x-2 overflow-x-auto py-1 no-scrollbar">`;
+    // Compact 10-Photo 5x2 Grid
+    mediaHtml = `<div class="album-compact-grid">`;
     album.media_urls.forEach((url, idx) => {
-      const activeClass = idx === 0 ? "thumb-active" : "";
-      thumbnailsHtml += `
-        <button class="thumb-btn flex-shrink-0 w-14 h-14 rounded-xl overflow-hidden border-2 border-slate-800 transition-all ${activeClass}" data-idx="${idx}" data-url="${url}">
-          <img src="${url}" alt="thumb ${idx + 1}" class="w-full h-full object-cover pointer-events-none" loading="lazy">
-        </button>
+      mediaHtml += `
+        <div class="grid-photo-item" title="Kattalashtirish (Rasm ${idx + 1})" onclick="window.open('${url}', '_blank')">
+          <img src="${url}" alt="photo ${idx + 1}" loading="lazy">
+        </div>
       `;
     });
-    thumbnailsHtml += `</div>`;
-
-    mediaHtml = `
-      <!-- Main Large Photo View -->
-      <div class="relative w-full aspect-[16/10] sm:aspect-[16/9] rounded-2xl overflow-hidden bg-slate-950 flex items-center justify-center border border-slate-800 group">
-        <img id="main-img-${album.id}" src="${album.media_urls[0]}" alt="${album.title}" class="w-full h-full object-cover cursor-pointer" onclick="window.open(this.src, '_blank')">
-        
-        <!-- Navigation Buttons -->
-        <button class="prev-photo-btn absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/60 hover:bg-black/90 text-white flex items-center justify-center backdrop-blur-md shadow transition-all active:scale-90" data-id="${album.id}" data-total="${count}">
-          ‹
-        </button>
-        <button class="next-photo-btn absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/60 hover:bg-black/90 text-white flex items-center justify-center backdrop-blur-md shadow transition-all active:scale-90" data-id="${album.id}" data-total="${count}">
-          ›
-        </button>
-
-        <!-- Counter Pill -->
-        <div id="counter-${album.id}" class="absolute top-2.5 right-2.5 px-3 py-1 rounded-full bg-black/70 text-white text-[11px] font-semibold backdrop-blur-md border border-white/10 shadow">
-          📷 1 / ${count} ta rasm
-        </div>
-      </div>
-
-      <!-- Thumbnails Strip -->
-      ${thumbnailsHtml}
-    `;
+    mediaHtml += `</div>`;
   }
 
   card.innerHTML = `
@@ -199,7 +158,7 @@ function renderAlbumCard(album) {
           ${album.category}
         </span>
         <span class="text-[11px] text-slate-400 font-medium">
-          ${album.media_type === 'video' ? '🎬 Video' : `📸 ${count} ta rasm to'plami`}
+          ${album.media_type === 'video' ? '🎬 Video' : `📸 ${count} ta sara rasm`}
         </span>
       </div>
       <button class="edit-btn text-xs text-sky-400 hover:text-sky-300 font-semibold flex items-center space-x-1" data-id="${album.id}">
@@ -207,7 +166,7 @@ function renderAlbumCard(album) {
       </button>
     </div>
 
-    <!-- Media Showcase -->
+    <!-- Media Showcase (Compact Grid) -->
     ${mediaHtml}
 
     <!-- Caption / Status Section -->
@@ -232,26 +191,7 @@ function renderAlbumCard(album) {
     </div>
   `;
 
-  // Attach Carousel handlers
-  if (album.media_type === "photo") {
-    card.querySelector(".prev-photo-btn")?.addEventListener("click", () => {
-      haptic("light");
-      switchAlbumPhoto(album.id, (albumActivePhoto[album.id] || 0) - 1, count);
-    });
-    card.querySelector(".next-photo-btn")?.addEventListener("click", () => {
-      haptic("light");
-      switchAlbumPhoto(album.id, (albumActivePhoto[album.id] || 0) + 1, count);
-    });
-
-    card.querySelectorAll(".thumb-btn").forEach(btn => {
-      btn.addEventListener("click", () => {
-        haptic("light");
-        switchAlbumPhoto(album.id, parseInt(btn.dataset.idx), count);
-      });
-    });
-  }
-
-  // Action handlers
+  // Attach action handlers
   card.querySelector(".approve-btn").addEventListener("click", () => handleApprove(album.id));
   card.querySelector(".reject-btn").addEventListener("click", () => handleReject(album.id));
   card.querySelector(".edit-btn").addEventListener("click", () => openEditModal(album.id, album.caption));
@@ -346,7 +286,7 @@ cancelModalBtn.addEventListener("click", closeEditModal);
 async function handleSearch() {
   const query = searchInput.value.trim();
   if (!query) {
-    showToast("Iltimos, mashina yoki mavzu nomini yozing!", true);
+    showToast("Iltimos, mavzu yoki mashina nomini yozing!", true);
     return;
   }
 
@@ -398,9 +338,9 @@ triggerAutoBtn.addEventListener("click", async () => {
     await fetch(`${API_BASE_URL}/api/search`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ category: "cars", query: "Porsche 911" })
+      body: JSON.stringify({ category: "avatars_boys", query: "" })
     });
-    showToast("Yangi 10 talik to'plam qo'shildi!");
+    showToast("Yangi to'plam qo'shildi!");
     loadCandidates();
   } catch (err) {
     showToast("Xatolik yuz berdi", true);

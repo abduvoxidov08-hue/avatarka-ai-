@@ -6,7 +6,7 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 
-/* Hide scrollbars for pill bar and thumbnail strips */
+/* Hide scrollbars for pill bar */
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
@@ -15,10 +15,39 @@ body {
   scrollbar-width: none;
 }
 
-.thumb-active {
-  border-color: #38bdf8 !important;
-  box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.4);
-  transform: scale(1.05);
+/* Compact 10-Photo Grid (5 columns x 2 rows) */
+.album-compact-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 6px;
+}
+
+@media (max-width: 640px) {
+  .album-compact-grid {
+    grid-template-columns: repeat(5, 1fr);
+    gap: 4px;
+  }
+}
+
+.grid-photo-item {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background-color: #0f172a;
+  cursor: pointer;
+}
+
+.grid-photo-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.25s ease;
+}
+
+.grid-photo-item:hover img {
+  transform: scale(1.08);
 }
 
 /* Telegram Mini App Theme variable fallback */
